@@ -1,6 +1,6 @@
 % A) lookup: Rx.m, Ry.m, Rz.m
 % B) lookup the bloch_relax function in this file
-% C)
+% D)
 % divide into thousand so each t is a ms
 t = linspace(0, 1, 1000); % s
 % total Magnetization at eq
@@ -11,7 +11,12 @@ T1 = 1.;  T2 = .1; % s
 M_equilibrium = [0, 0, M0].';
 
 gammabar = 42.58; % kHz/mT
-T = 1; % 1 ms pulse duration
+T = 1; % 3 ms pulse duration
+wait_time = 3;
+
+% tau times
+relaxation_time_1 = 15 + wait_time; %ms
+relaxation_time_2 = 10 + wait_time; %ms
 
 % calculate RF pulse amplitude (milliTesla)
 % desired flip angle
@@ -32,7 +37,6 @@ M_after_60_x = bloch_rftip(M_equilibrium, T, B10)
 Magnetization_history{2} = M_after_60_x;
 Magnetization_cmt{2} = "M after 60 x";
 
-relaxation_time_1 = 15; %ms
 
 M_rel_1 = zeros(3, relaxation_time_1);
 
@@ -58,7 +62,6 @@ M_after_45y = bloch_rftip(M_equilibrium, T, B10)
 Magnetization_history{5} = M_after_45y;
 Magnetization_cmt{5} = "M after 45y";
 
-relaxation_time_2 = 10; %ms
 
 M_rel_2 = zeros(3, relaxation_time_2);
 
@@ -75,12 +78,18 @@ M_after_relaxation_2 = M_rel_2(:, end)
 Magnetization_history{7} = M_after_relaxation_2;
 Magnetization_cmt{7} = "M after relaxation 2";
 
-figure,
+% figure,
 view([1,1,1]);
 am = 1; % default is 1
 axis([-am am -am am -am am]);
 hold on;
 grid on;
+f = gcf;
+width = 800;
+height = 800;
+Pix_SS = get(0,'screensize');
+set(f,'Position',[(Pix_SS(3)-width)/2 (Pix_SS(4)-height)/2 width height])
+set(f,'Renderer','ZBuffer')
 
 for k=1:length(Magnetization_history)
     hist = Magnetization_history{k};
@@ -94,7 +103,9 @@ for k=1:length(Magnetization_history)
         h1=quiver3(0,0,0,Mx,My,Mz, 'Color', 'r');
         h2=quiver3(0,0,0,Mx,My,0, 'Color', 'b');
         h3=quiver3(0,0,0,0,0,Mz, 'Color', 'm');
-        title(cmt)
+        title(cmt);
+        file_name = sprintf('Figures/question_2_d_%s.png', cmt.lower());
+        saveas(gcf, file_name);
         pause(2)
         delete(h1)
         delete(h2)
@@ -104,12 +115,20 @@ end
 
 close all;
 
-figure,
+% figure,
 view([1,1,1]);
 am = 1; % default is 1
 axis([-am am -am am -am am]);
 hold on;
 grid on;
+f = gcf;
+width = 800;
+height = 800;
+Pix_SS = get(0,'screensize');
+set(f,'Position',[(Pix_SS(3)-width)/2 (Pix_SS(4)-height)/2 width height])
+set(f,'Renderer','ZBuffer')
+writerObj = VideoWriter('Videos/question_2_d_relaxation.avi');
+open(writerObj);
 
 for k=1:length(Magnetization_history)
     hist = Magnetization_history{k};
@@ -124,17 +143,20 @@ for k=1:length(Magnetization_history)
             h1=quiver3(0,0,0,Mx,My,Mz, 'Color', 'r');
             h2=quiver3(0,0,0,Mx,My,0, 'Color', 'b');
             h3=quiver3(0,0,0,0,0,Mz, 'Color', 'm');
-            title(cmt)
-            pause(1)
+            title(cmt);
+            F = getframe(f) ;           %// Capture the frame
+            writeVideo(writerObj,F)  %// add the frame to the movie
+            pause(0.1)
             delete(h1)
             delete(h2)
             delete(h3)
         end
-        pause(1)
+        pause(0.1)
     end
 end
 
 close all;
+close(writerObj);
 
 function [Mend] = bloch_rotate(Mstart, T, B)
 % bloch_rotate - compute the rotation of the net magnetization for a given magnetic field
